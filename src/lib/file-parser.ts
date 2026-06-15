@@ -1,26 +1,13 @@
 import mammoth from 'mammoth';
+import { extractText } from 'unpdf';
 
 /**
  * Extrai texto a partir do buffer de um arquivo PDF
  */
 export async function parsePdf(buffer: Buffer): Promise<string> {
   try {
-    // Polyfill para evitar o erro "DOMMatrix is not defined" em ambientes Node.js
-    if (typeof globalThis !== 'undefined' && !('DOMMatrix' in globalThis)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).DOMMatrix = class DOMMatrix {};
-    }
-    if (typeof global !== 'undefined' && !('DOMMatrix' in global)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (global as any).DOMMatrix = class DOMMatrix {};
-    }
-
-    // Carregar o pdf-parse dinamicamente usando require para evitar problemas de compatibilidade ESM no build
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PDFParse } = require('pdf-parse');
-    const parser = new PDFParse({ data: buffer });
-    const res = await parser.getText();
-    return res.text || '';
+    const result = await extractText(new Uint8Array(buffer), { mergePages: true });
+    return result.text || '';
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     throw new Error(`Erro ao parsear arquivo PDF: ${errorMessage}`);
