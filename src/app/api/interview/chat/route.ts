@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { google } from "@ai-sdk/google";
 import { getInterviewSimulatorPrompt } from "@/lib/agents";
@@ -22,6 +22,9 @@ export async function POST(request: Request) {
     // 1. Gerar o prompt do sistema customizado com o RAG da categoria correspondente
     const systemPrompt = await getInterviewSimulatorPrompt(category, seniority);
 
+    // 1.5. Converter as UIMessages do frontend para ModelMessages compatíveis com o streamText do SDK
+    const modelMessages = await convertToModelMessages(messages);
+
     // 2. Transmitir o stream de texto gerado pelo GPT-4o utilizando o Vercel AI SDK
     const result = streamText({
       model:
@@ -29,7 +32,7 @@ export async function POST(request: Request) {
           ? google("gemini-2.5-flash")
           : openai("gpt-4o"),
       system: systemPrompt,
-      messages, // mantém o histórico completo do chat enviado pelo frontend
+      messages: modelMessages, // mantém o histórico completo do chat convertido
     });
 
     // 3. Retornar a resposta em formato de fluxo de dados (Text Stream) para o frontend
